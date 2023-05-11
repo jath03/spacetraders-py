@@ -5,6 +5,8 @@ from enum import StrEnum, auto
 from abc import ABC, abstractmethod
 from functools import cache
 import time
+import re
+import email
 
 URL_BASE = "https://api.spacetraders.io/v2"
 
@@ -32,7 +34,32 @@ def handle_error(response: BaseHTTPResponse, expected: int = 200):
     elif response.status == 429:
         raise RateLimitException()
     else:
-        raise APIError(response.json()['error']['message'])
+        print(response.status)
+        raise APIError(response.data)
+
+
+def custom_parse_retry_after(self, retry_after):
+    # Whitespace: https://tools.ietf.org/html/rfc7230#section-3.2.4
+    if re.match(r"^\s*[0-9.]+\s*$", retry_after):
+        seconds = float(retry_after)
+    else:
+        retry_date_tuple = email.utils.parsedate_tz(retry_after)
+        if retry_date_tuple is None:
+            raise InvalidHeader("Invalid Retry-After header: %s" % retry_after)
+        if retry_date_tuple[9] is None:  # Python 2
+            # Assume UTC if no timezone was specified
+            # On Python2.7, parsedate_tz returns None for a timezone offset
+            # instead of 0 if no timezone is given, where mktime_tz treats
+            # a None timezone offset as local time.
+            retry_date_tuple = retry_date_tuple[:9] + (0,) + retry_date_tuple[10:]
+
+        retry_date = email.utils.mktime_tz(retry_date_tuple)
+        seconds = retry_date - time.time()
+
+    if seconds < 0:
+        seconds = 0
+
+    return seconds
 
 
 class GameObject(ABC):

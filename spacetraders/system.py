@@ -1,5 +1,5 @@
 from functools import cached_property
-from .utils import StaticGameObject, URL_BASE
+from .utils import StaticGameObject, URL_BASE, handle_error
 from .waypoint import Waypoint
 
 

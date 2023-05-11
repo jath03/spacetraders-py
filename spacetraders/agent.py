@@ -1,13 +1,16 @@
 from urllib3 import request, PoolManager
+from urllib3.util.retry import Retry
 from functools import cache, cached_property
 import logging
 import json
 from xdg_base_dirs import xdg_data_home
 from pathlib import Path
 from .enums import Faction
-from .utils import URL_BASE, GameObject
+from .utils import URL_BASE, GameObject, custom_parse_retry_after, handle_error
 from .contract import Contract
 from .ship import Ship
+
+Retry.parse_retry_after = custom_parse_retry_after
 
 
 class Agent(GameObject):
@@ -62,12 +65,12 @@ class Agent(GameObject):
 
     @property
     def contracts(self) -> list[Contract]:
-        r = self.pm.request("GET", URL_BASE + "/my/contracts")
+        r = handle_error(self.pm.request("GET", URL_BASE + "/my/contracts"))
         return [Contract(self.pm, d['id']) for d in r.json()['data']]
 
     @property
     def fleet(self) -> list[Ship]:
-        r = self.pm.request("GET", URL_BASE + "/my/ships")
+        r = handle_error(self.pm.request("GET", URL_BASE + "/my/ships"))
         return [Ship(self.pm, d['symbol']) for d in r.json()['data']]
 
     @property
