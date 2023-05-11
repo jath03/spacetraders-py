@@ -1,0 +1,2 @@
+urllib3==2.0.2
+xdg-base-dirs==6.0.0
