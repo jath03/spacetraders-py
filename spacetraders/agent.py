@@ -69,3 +69,7 @@ class Agent(GameObject):
     def fleet(self) -> list[Ship]:
         r = self.pm.request("GET", URL_BASE + "/my/ships")
         return [Ship(self.pm, d['symbol']) for d in r.json()['data']]
+
+    @property
+    def credits(self) -> int:
+        return self.get_data()['credits']
