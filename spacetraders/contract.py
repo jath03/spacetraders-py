@@ -1,4 +1,6 @@
 import time
+from .enums import Goods
+from .ship import Ship
 from .utils import URL_BASE, GameObject, handle_error
 
 
@@ -18,5 +20,22 @@ class Contract(GameObject):
     def accept(self):
         handle_error(self.pm.request(
             "POST",
-            URL_BASE + f"/my/contracts/{self.id}/accept",
+            URL_BASE + self.url + "/accept",
+        ))
+
+    def deliver(self, good: Goods, units: int, ship: Ship):
+        handle_error(self.pm.request(
+            "POST",
+            URL_BASE + self.url + "/deliver",
+            json={
+                "shipSymbol": ship.id,
+                "tradeSymbol": str(good).upper(),
+                "units": units
+            }
+        ))
+
+    def fulfill(self):
+        handle_error(self.pm.request(
+            "POST",
+            URL_BASE + self.url + "/fulfill",
         ))
