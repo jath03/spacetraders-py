@@ -12,6 +12,7 @@ print(a.fleet)
 a.save_token()
 ```
 
+
 ```python
 from spacetraders import Agent, WaypointType
 
@@ -20,4 +21,12 @@ print(a.credits)
 command = a.fleet[0]
 wp = next(command.nav.find_type(WaypointType.ORBITAL_STATION))
 command.navigate(wp)
+```
+
+
+```python
+from spacetraders import Agent, Faction
+
+a = Agent.register("<agent symbol>", Faction.COSMIC)
+print(a.contracts)
 ```
