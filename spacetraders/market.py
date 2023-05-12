@@ -23,6 +23,7 @@ class Market(GameObject):
         for i in self.get_data()['tradeGoods']:
             if i['symbol'] == str(item).upper():
                 return i
+        return {}
 
     def cargo_value(self, inventory: dict[Goods, int]) -> int:
         data = self.get_data()['tradeGoods']

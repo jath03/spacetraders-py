@@ -10,7 +10,7 @@ from .utils import URL_BASE, GameObject, custom_parse_retry_after, handle_error
 from .contract import Contract
 from .ship import Ship
 
-Retry.parse_retry_after = custom_parse_retry_after
+Retry.parse_retry_after = custom_parse_retry_after # type: ignore
 
 
 class Agent(GameObject):

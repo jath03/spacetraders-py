@@ -63,7 +63,7 @@ def custom_parse_retry_after(self, retry_after):
 
 
 class GameObject(ABC):
-    def __init__(self, pm: PoolManager, id: str | None = None):
+    def __init__(self, pm: PoolManager, id: str):
         self.pm = pm
         self.id = id
 

@@ -8,7 +8,7 @@ from .waypoint import Waypoint
 
 
 class Nav(GameObject):
-    CACHED_SYSTEMS = {}
+    CACHED_SYSTEMS: dict[str, System] = {}
 
     @property
     def url(self) -> str:
@@ -101,7 +101,7 @@ class Ship(GameObject):
         return {Goods(item['symbol'].lower()): item['units'] for item in self.get_data()['cargo']['inventory']}
 
     @property
-    def cargo_status(self) -> (int, int):
+    def cargo_status(self) -> tuple[int, int]:
         data = self.get_data()['cargo']
         return (data['units'], data['capacity'])
 
@@ -110,8 +110,8 @@ class Ship(GameObject):
             "POST",
             URL_BASE + self.url + "/sell",
             json={
-                symbol: str(Goods).upper(),
-                units: units
+                "symbol": str(Goods).upper(),
+                "units": units
             }
         ))
 
@@ -120,8 +120,8 @@ class Ship(GameObject):
             "POST",
             URL_BASE + self.url + "/buy",
             json={
-                symbol: str(Goods).upper(),
-                units: units
+                "symbol": str(Goods).upper(),
+                "units": units
             }
         ))
 
@@ -130,8 +130,8 @@ class Ship(GameObject):
             "POST",
             URL_BASE + self.url + "/transfer",
             json={
-                tradeSymbol: str(Goods).upper(),
-                units: units,
-                shipSymbol: ship.id
+                "tradeSymbol": str(Goods).upper(),
+                "units": units,
+                "shipSymbol": ship.id
             }
         ))
