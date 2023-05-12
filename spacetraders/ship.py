@@ -1,5 +1,3 @@
-from enum import StrEnum, auto
-from functools import cached_property
 from typing import Iterator, Self
 from .enums import ShipStatus, FlightMode, WaypointType, WaypointTrait, Goods
 from .utils import GameObject, URL_BASE, time_to_seconds, handle_error

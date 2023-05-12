@@ -1,4 +1,3 @@
-from functools import cached_property
 from .enums import ShipType
 from .utils import StaticGameObject, wp_to_system, URL_BASE, handle_error
 

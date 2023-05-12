@@ -1,7 +1,6 @@
 from urllib3 import PoolManager
+from urllib3.exceptions import InvalidHeader
 from urllib3.response import BaseHTTPResponse
-from dataclasses import dataclass
-from enum import StrEnum, auto
 from abc import ABC, abstractmethod
 from functools import cache
 import time

@@ -1,4 +1,3 @@
-import time
 from .enums import Goods
 from .ship import Ship
 from .utils import URL_BASE, GameObject, handle_error

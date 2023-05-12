@@ -1,5 +1,4 @@
 from functools import cached_property
-from enum import StrEnum, auto
 from .enums import WaypointTrait, WaypointType
 from .utils import StaticGameObject, wp_to_system
 from .shipyard import Shipyard

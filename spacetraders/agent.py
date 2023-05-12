@@ -1,7 +1,6 @@
 from urllib3 import request, PoolManager
 from urllib3.util.retry import Retry
-from functools import cache, cached_property
-import logging
+from functools import cache
 import json
 from xdg_base_dirs import xdg_data_home
 from pathlib import Path
@@ -10,7 +9,7 @@ from .utils import URL_BASE, GameObject, custom_parse_retry_after, handle_error
 from .contract import Contract
 from .ship import Ship
 
-Retry.parse_retry_after = custom_parse_retry_after # type: ignore
+Retry.parse_retry_after = custom_parse_retry_after  # type: ignore
 
 
 class Agent(GameObject):
@@ -49,7 +48,7 @@ class Agent(GameObject):
         try:
             with open(Agent._token_path(local), "r") as f:
                 tokens = json.load(f)
-        except (FileNotFoundError, json.decoder.JSONDecodeError) as e:
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
             pass
         with open(Agent._token_path(local), "w") as f:
             tokens[self.get_data()['symbol']] = self.token
