@@ -15,7 +15,8 @@ Retry.parse_retry_after = custom_parse_retry_after  # type: ignore
 class Agent(GameObject):
     def __init__(self, token: str):
         self.token = token
-        self.pm = PoolManager(headers={
+        r = Retry(allowed_methods=('DELETE', 'GET', 'POST', 'HEAD', 'OPTIONS', 'PUT', 'TRACE'))
+        self.pm = PoolManager(retries=r, headers={
             "Authorization": f"Bearer {token}"
         })
 

@@ -1,6 +1,8 @@
 from typing import Iterator, Self
+from datetime import datetime, timezone, timedelta
+import time
 from .enums import ShipStatus, FlightMode, WaypointType, WaypointTrait, Goods
-from .utils import GameObject, URL_BASE, time_to_seconds, handle_error
+from .utils import GameObject, URL_BASE, handle_error, CooldownError
 from .system import System
 from .waypoint import Waypoint
 
@@ -28,11 +30,11 @@ class Nav(GameObject):
 
     @property
     def status(self) -> ShipStatus:
-        return ShipStatus(self.get_data()['status'])
+        return ShipStatus(self.get_data()['status'].lower())
 
     @property
     def mode(self) -> FlightMode:
-        return FlightMode(self.get_data()['flightMode'])
+        return FlightMode(self.get_data()['flightMode'].lower())
 
     def find_traits(self, traits: tuple[WaypointTrait]) -> Iterator[Waypoint]:
         for wp in self.system.waypoints:
@@ -43,6 +45,14 @@ class Nav(GameObject):
         for wp in self.system.waypoints:
             if wp.type == wp_type:
                 yield wp
+
+    @property
+    def eta(self) -> int:
+        data = self.get_data()
+        if data['status'] == "IN_TRANSIT":
+            return datetime.fromisoformat(data['route']['arrival']) - datetime.now(timezone.utc)
+        else:
+            return timedelta()
 
 
 class Ship(GameObject):
@@ -63,15 +73,13 @@ class Ship(GameObject):
             f"status={data['nav']['status']})"
         )
 
-    def navigate(self, wp: Waypoint):
-        r = handle_error(self.pm.request(
+    def navigate(self, wp: Waypoint) -> float:
+        handle_error(self.pm.request(
             "POST",
             URL_BASE + self.url + "/navigate",
             json={"waypointSymbol": wp.id}
         ))
-        arrival = r.json()['data']['nav']['route']['arrival']
-        departure = r.json()['data']['nav']['route']['departureTime']
-        print("Flight duration: " + str(time_to_seconds(arrival) - time_to_seconds(departure)))
+        return self.nav.eta
 
     def dock(self):
         handle_error(self.pm.request("POST", URL_BASE + self.url + "/dock"))
@@ -79,8 +87,15 @@ class Ship(GameObject):
     def orbit(self):
         handle_error(self.pm.request("POST", URL_BASE + self.url + "/orbit"))
 
-    def extract(self):
-        handle_error(self.pm.request("POST", URL_BASE + self.url + "/extract"), 201)
+    def extract(self) -> int:
+        return handle_error(self.pm.request("POST", URL_BASE + self.url + "/extract"), 201).json()['data']['cooldown']['remainingSeconds']
+
+    def extract_until_full(self):
+        while len(set(self.cargo_status)) != 1:
+            try:
+                time.sleep(self.extract())
+            except CooldownError:
+                time.sleep(1)
 
     def refuel(self):
         handle_error(self.pm.request("POST", URL_BASE + self.url + "/refuel"))
@@ -108,10 +123,15 @@ class Ship(GameObject):
             "POST",
             URL_BASE + self.url + "/sell",
             json={
-                "symbol": str(Goods).upper(),
+                "symbol": str(item).upper(),
                 "units": units
             }
-        ))
+        ), 201)
+
+    def sell_all(self, do_not_sell: tuple[Goods] | None = None):
+        for (good, quantity) in self.inventory.items():
+            if good not in do_not_sell:
+                self.sell(good, quantity)
 
     def buy(self, item: Goods, units: int):
         handle_error(self.pm.request(
@@ -133,3 +153,6 @@ class Ship(GameObject):
                 "shipSymbol": ship.id
             }
         ))
+
+    def wait_for_arrival(self):
+        time.sleep(self.nav.eta.seconds)

@@ -3,6 +3,7 @@ from urllib3.exceptions import InvalidHeader
 from urllib3.response import BaseHTTPResponse
 from abc import ABC, abstractmethod
 from functools import cache
+from json import JSONDecodeError
 import time
 import re
 import email
@@ -14,7 +15,19 @@ class APIError(Exception):
     pass
 
 
-class RateLimitException(Exception):
+class ClientError(APIError):
+    pass
+
+
+class RateLimitException(ClientError):
+    pass
+
+
+class CooldownError(ClientError):
+    pass
+
+
+class InsufficientFuelError(ClientError):
     pass
 
 
@@ -22,19 +35,27 @@ def wp_to_system(waypoint_symbol: str) -> str:
     return '-'.join(waypoint_symbol.split('-')[:2])
 
 
-def time_to_seconds(t: str) -> float:
-    t = t.split('.')[0]
-    return time.mktime(time.strptime(t, "%Y-%m-%dT%H:%M:%S"))
-
-
 def handle_error(response: BaseHTTPResponse, expected: int = 200):
     if response.status == expected:
         return response
     elif response.status == 429:
-        raise RateLimitException()
+        raise RateLimitException(response.json()['error'])
+    elif 400 <= response.status <= 499:
+        code = response.json()['error']['code']
+        if code == 4000:
+            raise CooldownError(response.json()['error']['data'])
+        elif code == 4203:
+            raise InsufficientFuelError(response.json()['error']['data'])
+        elif code == 4204:
+            return response
+        else:
+            raise ClientError(response.json()['error'])
     else:
         print(response.status)
-        raise APIError(response.data)
+        try:
+            raise APIError(response.json()['error'])
+        except JSONDecodeError:
+            raise APIError(response.data)
 
 
 def custom_parse_retry_after(self, retry_after):

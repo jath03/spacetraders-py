@@ -23,16 +23,16 @@ class FlightMode(StrEnum):
 
 
 class ShipType(StrEnum):
-    PROBE = auto()
-    MINING_DRONE = auto()
-    INTERCEPTOR = auto()
-    LIGHT_HAULER = auto()
-    COMMAND_FRIGATE = auto()
-    EXPLORER = auto()
-    HEAVY_FREIGHTER = auto()
-    LIGHT_SHUTTLE = auto()
-    ORE_HOUND = auto()
-    REFINING_FREIGHTER = auto()
+    SHIP_PROBE = auto()
+    SHIP_MINING_DRONE = auto()
+    SHIP_INTERCEPTOR = auto()
+    SHIP_LIGHT_HAULER = auto()
+    SHIP_COMMAND_FRIGATE = auto()
+    SHIP_EXPLORER = auto()
+    SHIP_HEAVY_FREIGHTER = auto()
+    SHIP_LIGHT_SHUTTLE = auto()
+    SHIP_ORE_HOUND = auto()
+    SHIP_REFINING_FREIGHTER = auto()
 
 
 class WaypointType(StrEnum):
