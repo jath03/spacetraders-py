@@ -39,7 +39,10 @@ def handle_error(response: BaseHTTPResponse, expected: int = 200):
     if response.status == expected:
         return response
     elif response.status == 429:
-        raise RateLimitException(response.json()['error'])
+        try:
+            raise RateLimitException(response.retries, response.json()['error'])
+        except JSONDecodeError:
+            raise RateLimitException(response.retries, response.data)
     elif 400 <= response.status <= 499:
         code = response.json()['error']['code']
         if code == 4000:

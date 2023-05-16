@@ -58,7 +58,7 @@ class Nav(GameObject):
 class Ship(GameObject):
     def __init__(self, pm, id: str):
         super().__init__(pm, id)
-        self.nav = Nav(self.pm, self.id)
+        self.nav = Nav(pm, id)
 
     @property
     def url(self) -> str:
@@ -130,7 +130,7 @@ class Ship(GameObject):
 
     def sell_all(self, do_not_sell: tuple[Goods] | None = None):
         for (good, quantity) in self.inventory.items():
-            if good not in do_not_sell:
+            if do_not_sell is None or good not in do_not_sell:
                 self.sell(good, quantity)
 
     def buy(self, item: Goods, units: int):

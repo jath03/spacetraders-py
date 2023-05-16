@@ -1,5 +1,7 @@
 from urllib3 import request, PoolManager
 from urllib3.util.retry import Retry
+from threading import Thread
+from queue import Queue
 from functools import cache
 import json
 from xdg_base_dirs import xdg_data_home
@@ -16,7 +18,7 @@ class Agent(GameObject):
     def __init__(self, token: str):
         self.token = token
         r = Retry(allowed_methods=('DELETE', 'GET', 'POST', 'HEAD', 'OPTIONS', 'PUT', 'TRACE'))
-        self.pm = PoolManager(retries=r, headers={
+        self.pm = PoolManager(retries=r, block=True, headers={
             "Authorization": f"Bearer {token}"
         })
 

@@ -12,10 +12,10 @@ class Shipyard(StaticGameObject):
         return f"/systems/{wp_to_system(self.id)}/waypoints/{self.id}/shipyard"
 
     @property
-    def ships(self) -> list[tuple[ShipType, int]]:
+    def ships(self) -> dict[ShipType, int]:
         try:
             ships = self.get_data()['ships']
-            return [(ShipType(ship['type'].lower()), ship['purchasePrice']) for ship in ships]
+            return {ShipType(ship['type'].lower()): ship['purchasePrice'] for ship in ships}
         except KeyError as e:
             raise InventoryError("No ships available for purchase. Are you docked at the shipyard?") from e
 

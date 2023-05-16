@@ -16,6 +16,10 @@ class Contract(GameObject):
             f"deadline={data['terms']['deadline']})"
         )
 
+    @property
+    def accepted(self):
+        return self.get_data()['accepted']
+
     def accept(self):
         handle_error(self.pm.request(
             "POST",
@@ -38,3 +42,9 @@ class Contract(GameObject):
             "POST",
             URL_BASE + self.url + "/fulfill",
         ))
+
+    @property
+    def items(self) -> dict[Goods, int]:
+        data = self.get_data()
+        deliveries = data['terms']['deliver']
+        return dict(map(lambda d: (Goods(d['tradeSymbol'].lower()), d['unitsRequired']), deliveries))

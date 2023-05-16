@@ -220,3 +220,9 @@ class Goods(StrEnum):
     MOUNT_LASER_CANNON_I = auto()
     MOUNT_MISSILE_LAUNCHER_I = auto()
     MOUNT_TURRET_I = auto()
+
+
+class ContractType(StrEnum):
+    PROCUREMENT = auto()
+    TRANSPORT = auto()
+    SHUTTLE = auto()
