@@ -25,8 +25,8 @@ command.navigate(wp)
 
 
 ```python
-from spacetraders import Agent, Faction
+from spacetraders import Agent, FactionSymbol
 
-a = Agent.register("<agent symbol>", Faction.COSMIC)
+a = Agent.register("<agent symbol>", FactionSymbol.COSMIC)
 print(a.contracts)
 ```

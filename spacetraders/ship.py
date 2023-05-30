@@ -87,11 +87,12 @@ class Ship(GameObject):
     def orbit(self):
         handle_error(self.pm.request("POST", URL_BASE + self.url + "/orbit"))
 
-    def extract(self) -> int:
-        return handle_error(self.pm.request("POST", URL_BASE + self.url + "/extract"), 201).json()['data']['cooldown']['remainingSeconds']
+    def extract(self) -> tuple[int, Goods, int]:
+        data = handle_error(self.pm.request("POST", URL_BASE + self.url + "/extract"), 201).json()['data']
+        return data['cooldown']['remainingSeconds'], Goods(data['extraction']['yield']['symbol'].lower()), data['extraction']['yield']['units']
 
     def extract_until_full(self):
-        while len(set(self.cargo_status)) != 1:
+        while not self.full:
             try:
                 time.sleep(self.extract())
             except CooldownError:
@@ -117,6 +118,10 @@ class Ship(GameObject):
     def cargo_status(self) -> tuple[int, int]:
         data = self.get_data()['cargo']
         return (data['units'], data['capacity'])
+
+    @property
+    def full(self) -> bool:
+        return len(set(self.cargo_status)) == 1
 
     def sell(self, item: Goods, units: int):
         handle_error(self.pm.request(
@@ -156,3 +161,7 @@ class Ship(GameObject):
 
     def wait_for_arrival(self):
         time.sleep(self.nav.eta.seconds)
+
+    @property
+    def fuel(self) -> int:
+        return self.get_data()['fuel']['current']

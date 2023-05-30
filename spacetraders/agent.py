@@ -1,24 +1,23 @@
-from urllib3 import request, PoolManager
-from urllib3.util.retry import Retry
-from threading import Thread
-from queue import Queue
-from functools import cache
+from urllib3 import request
+from urllib3.util.retry import Retry, RequestHistory
+from functools import cache, cached_property
 import json
 from xdg_base_dirs import xdg_data_home
 from pathlib import Path
-from .enums import Faction
-from .utils import URL_BASE, GameObject, custom_parse_retry_after, handle_error
+from .enums import FactionSymbol
+from .utils import URL_BASE, GameObject, handle_error, RateLimitedPoolManager
 from .contract import Contract
+from .faction import Faction
+from .waypoint import Waypoint
 from .ship import Ship
-
-Retry.parse_retry_after = custom_parse_retry_after  # type: ignore
 
 
 class Agent(GameObject):
     def __init__(self, token: str):
         self.token = token
-        r = Retry(allowed_methods=('DELETE', 'GET', 'POST', 'HEAD', 'OPTIONS', 'PUT', 'TRACE'))
-        self.pm = PoolManager(retries=r, block=True, headers={
+        h = tuple(RequestHistory(None, None, None, None, None) for _ in range(3))  # Makes backoff work
+        r = Retry(allowed_methods=('DELETE', 'GET', 'POST', 'HEAD', 'OPTIONS', 'PUT', 'TRACE'), backoff_factor=0.4, history=h, respect_retry_after_header=True)
+        self.pm = RateLimitedPoolManager(retries=r, num_pools=1, block=True, maxsize=1, headers={
             "Authorization": f"Bearer {token}"
         })
 
@@ -27,7 +26,7 @@ class Agent(GameObject):
         return "/my/agent"
 
     @classmethod
-    def register(cls, name: str, faction: Faction):
+    def register(cls, name: str, faction: FactionSymbol):
         r = request(
             "POST",
             URL_BASE + "/register",
@@ -78,3 +77,12 @@ class Agent(GameObject):
     @property
     def credits(self) -> int:
         return self.get_data()['credits']
+
+    @cached_property
+    def factions(self) -> list[Faction]:
+        r = handle_error(self.pm.request("GET", URL_BASE + "/factions"))
+        return [Faction(self.pm, d['symbol']) for d in r.json()['data']]
+
+    @cached_property
+    def headquarters(self) -> Waypoint:
+        return Waypoint(self.pm, self.get_data()['headquarters'])

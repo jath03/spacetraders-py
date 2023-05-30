@@ -1,12 +1,10 @@
 from urllib3 import PoolManager
-from urllib3.exceptions import InvalidHeader
 from urllib3.response import BaseHTTPResponse
+from threading import Thread, Lock
 from abc import ABC, abstractmethod
 from functools import cache
 from json import JSONDecodeError
 import time
-import re
-import email
 
 URL_BASE = "https://api.spacetraders.io/v2"
 
@@ -61,32 +59,61 @@ def handle_error(response: BaseHTTPResponse, expected: int = 200):
             raise APIError(response.data)
 
 
-def custom_parse_retry_after(self, retry_after):
-    # Whitespace: https://tools.ietf.org/html/rfc7230#section-3.2.4
-    if re.match(r"^\s*[0-9.]+\s*$", retry_after):
-        seconds = float(retry_after)
-    else:
-        retry_date_tuple = email.utils.parsedate_tz(retry_after)
-        if retry_date_tuple is None:
-            raise InvalidHeader("Invalid Retry-After header: %s" % retry_after)
-        if retry_date_tuple[9] is None:  # Python 2
-            # Assume UTC if no timezone was specified
-            # On Python2.7, parsedate_tz returns None for a timezone offset
-            # instead of 0 if no timezone is given, where mktime_tz treats
-            # a None timezone offset as local time.
-            retry_date_tuple = retry_date_tuple[:9] + (0,) + retry_date_tuple[10:]
+class Bucket:
+    def __init__(self, max: int, period: int):
+        self.max = max
+        self.current = max
+        self.period = period
+        self.refill_end = None
+        self.lock = Lock()
 
-        retry_date = email.utils.mktime_tz(retry_date_tuple)
-        seconds = retry_date - time.time()
+    def take(self) -> bool:
+        with self.lock:
+            if self.current == self.max:
+                self.refill_end = time.time() + self.period + 0.1
+                self.refill()
+            if self.current > 0:
+                self.current -= 1
+                return True
+            else:
+                return False
+        return False
 
-    if seconds < 0:
-        seconds = 0
+    def refill(self):
+        self.refill_thread = Thread(target=self._refill)
+        self.refill_thread.start()
 
-    return seconds
+    def _refill(self):
+        time.sleep(self.period + 0.1)
+        with self.lock:
+            self.current = self.max
+
+    @property
+    def time_remaining(self) -> float:
+        return max(self.refill_end - time.time(), 0)
+
+
+def rate_limit(f):
+    buckets = [
+        Bucket(2, 1),
+        Bucket(10, 10)
+    ]
+
+    def rate_limited_func(*args, **kwargs):
+        while True:
+            for bucket in buckets:
+                if bucket.take():
+                    return f(*args, **kwargs)
+            time.sleep(min(bucket.time_remaining for bucket in buckets))
+    return rate_limited_func
+
+
+class RateLimitedPoolManager(PoolManager):
+    urlopen = rate_limit(PoolManager.urlopen)
 
 
 class GameObject(ABC):
-    def __init__(self, pm: PoolManager, id: str):
+    def __init__(self, pm: RateLimitedPoolManager, id: str):
         self.pm = pm
         self.id = id
 

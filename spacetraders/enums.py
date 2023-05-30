@@ -1,7 +1,7 @@
 from enum import StrEnum, auto
 
 
-class Faction(StrEnum):
+class FactionSymbol(StrEnum):
     COSMIC = auto()
     VOID = auto()
     GALACTIC = auto()
